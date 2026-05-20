@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "Barbershop": {
+      "title": "Barbershop",
+      "description": "Represents a barbershop and its settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "description": { "type": "string" },
+        "logo": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "openTime": { "type": "string" },
+        "closeTime": { "type": "string" },
+        "slotDuration": { "type": "number" },
+        "instagram": { "type": "string" },
+        "tiktok": { "type": "string" },
+        "facebook": { "type": "string" },
+        "lunchStartTime": { "type": "string" },
+        "lunchEndTime": { "type": "string" },
+        "workingDays": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "secondaryColor": { "type": "string" },
+        "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "cancelled"] },
+        "trialEndsAt": { "type": "string", "format": "date-time" },
+        "asaasCustomerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug"]
+    },
+    "User": {
+      "title": "User",
+      "description": "System users (admins and barbers)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbershopId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "barber"] },
+        "plan": { "type": "string", "enum": ["free", "premium"] },
+        "avatarUrl": { "type": "string" },
+        "bookingToken": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barbershopId", "name", "email", "role"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Services offered by a barbershop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbershopId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barbershopId", "name", "price", "duration"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Scheduled appointment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbershopId": { "type": "string" },
+        "userId": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "barberName": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barbershopId", "userId", "serviceId", "customerName", "customerPhone", "date"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbershopId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "lastVisit": { "type": "string", "format": "date-time" },
+        "totalSpent": { "type": "number" },
+        "appointmentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barbershopId", "name", "phone"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbershopId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barbershopId", "title", "message", "type"]
+    }
+  },
+  "firestore": {
+    "/barbershops/{barbershopId}": {
+      "schema": "Barbershop",
+      "description": "Barbershop settings and profile"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and associations"
+    },
+    "/barbershops/{barbershopId}/services/{serviceId}": {
+      "schema": "Service",
+      "description": "Services list for a specific shop"
+    },
+    "/barbershops/{barbershopId}/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Appointments for a specific shop"
+    },
+    "/barbershops/{barbershopId}/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer registry for a specific shop"
+    },
+    "/barbershops/{barbershopId}/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Notifications for shop admins/barbers"
+    }
+  }
+}

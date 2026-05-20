@@ -1,0 +1,6 @@
+{
+  "name": "BarberTool",
+  "description": "A professional multi-tenant barbershop management and scheduling platform with automated admin onboarding and JWT security.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
