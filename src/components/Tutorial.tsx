@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { BookOpen, Scissors, Calendar, Users, Settings, ExternalLink, CheckCircle, Info } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -154,13 +155,16 @@ export default function Tutorial({ primaryColor, secondaryColor }: { primaryColo
           <h3 className="text-2xl font-bold mb-2">Precisa de ajuda avançada?</h3>
           <p className="text-neutral-400 text-sm" style={{ color: `${secondaryColor}b3` }}>Consulte nossa documentação técnica ou entre em contato com o suporte.</p>
         </div>
-        <button 
-          className="px-8 py-4 bg-white text-neutral-900 rounded-2xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2"
+        <Link 
+          to="/contact"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-8 py-4 bg-white text-neutral-900 rounded-2xl font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2 decoration-none"
           style={{ backgroundColor: secondaryColor, color: primaryColor }}
         >
           <ExternalLink size={18} />
           Acessar Canal de Suporte
-        </button>
+        </Link>
       </div>
     </div>
   );

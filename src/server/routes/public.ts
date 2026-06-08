@@ -3,6 +3,7 @@ import { db } from "../db.ts";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { createNotification } from "./notification.ts";
+import nodemailer from "nodemailer";
 
 const createPublicAppointmentSchema = z.object({
   serviceId: z.string().uuid(),
@@ -306,6 +307,8 @@ export function setupPublicRoutes(app: Express) {
         barberName: barber.name,
         serviceId,
         serviceName: service?.name,
+        servicePrice: service?.price || 0,
+        price: service?.price || 0,
         customerName,
         customerPhone,
         date,
@@ -383,6 +386,112 @@ export function setupPublicRoutes(app: Express) {
     } catch (err: any) {
       console.error(err);
       res.status(400).json({ error: err.errors || err.message || "Failed to create appointment" });
+    }
+  });
+
+  app.post("/api/public/contact", async (req: Request, res: Response) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: "Nome, e-mail e mensagem são campos obrigatórios." });
+      }
+
+      const contactId = uuidv4();
+      const timestamp = new Date().toISOString();
+
+      // Store in firestore contact_messages collection for guaranteed backup delivery
+      await db.collection("contact_messages").doc(contactId).set({
+        id: contactId,
+        name,
+        email,
+        subject: subject || "Sem Assunto",
+        message,
+        createdAt: timestamp,
+        status: "pending"
+      });
+
+      // Email details configuration
+      const destinationEmail = "barbertoolsuporte@gmail.com";
+      
+      const emailUser = process.env.SUPPORT_EMAIL_USER || "";
+      const emailPass = process.env.SUPPORT_EMAIL_PASS || "";
+
+      let emailSent = false;
+      let emailError = null;
+
+      if (emailUser && emailPass) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: emailUser,
+              pass: emailPass,
+            },
+          });
+
+          const mailOptions = {
+            from: `"Contato BarberTool" <${emailUser}>`,
+            to: destinationEmail,
+            replyTo: email,
+            subject: `[Contato BarberTool] ${subject || "Nova mensagem de suporte"}`,
+            text: `Você recebeu um novo contato via BarberTool!\n\nNome: ${name}\nE-mail do remetente: ${email}\nAssunto: ${subject || "Sem assunto"}\n\nMensagem:\n${message}\n\nEnviada em: ${new Date(timestamp).toLocaleString("pt-BR")}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f0f0f0; border-radius: 12px; background-color: #ffffff; color: #111111;">
+                <h2 style="color: #111; border-bottom: 2px solid #111; padding-bottom: 10px; margin-top: 0; text-transform: uppercase; font-size: 20px;">Nova Mensagem de Contato</h2>
+                <p style="font-size: 14px; color: #444; margin: 15px 0;">Você recebeu uma nova mensagem enviada através do formulário de contato do <strong>BarberTool</strong>.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; font-weight: bold; width: 120px; font-size: 14px;">Remetente:</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; color: #333; font-size: 14px;">${name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; font-weight: bold; font-size: 14px;">E-mail:</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; color: #333; font-size: 14px;"><a href="mailto:${email}" style="color: #111; text-decoration: underline;">${email}</a></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; font-weight: bold; font-size: 14px;">Assunto:</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #f4f4f4; color: #333; font-size: 14px;">${subject || "Sem assunto"}</td>
+                  </tr>
+                </table>
+                
+                <div style="margin-top: 25px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #111; border-radius: 4px;">
+                  <p style="font-weight: bold; margin-top: 0; font-size: 14px; color: #111;">Mensagem:</p>
+                  <p style="color: #444; white-space: pre-wrap; margin-bottom: 0; font-size: 14px; line-height: 1.6;">${message}</p>
+                </div>
+                
+                <p style="font-size: 11px; color: #999; margin-top: 30px; text-align: center;">ID de Rastreio: ${contactId} | Enviada em: ${new Date(timestamp).toLocaleString("pt-BR")}</p>
+              </div>
+            `
+          };
+
+          await transporter.sendMail(mailOptions);
+          emailSent = true;
+          
+          await db.collection("contact_messages").doc(contactId).update({
+            status: "sent",
+            sentAt: new Date().toISOString()
+          });
+        } catch (err: any) {
+          console.error("Erro ao enviar e-mail via SMTP Gmail:", err);
+          emailError = err.message || err;
+        }
+      } else {
+        console.warn(`WARNING: SUPPORT_EMAIL_USER e SUPPORT_EMAIL_PASS não configurados na .env do servidor. A mensagem foi salva no banco de dados para segurança, mas o disparo SMTP foi ignorado.`);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Sua mensagem foi entregue com total sucesso aos nossos servidores!",
+        contactId,
+        emailSent,
+        warning: !emailSent ? "Disparo de e-mail SMTP pelo servidor não configurado. Adicione SUPPORT_EMAIL_USER e SUPPORT_EMAIL_PASS no .env para habilitar." : undefined,
+        debugError: emailError
+      });
+    } catch (err: any) {
+      console.error("Erro geral no endpoint de contato:", err);
+      res.status(500).json({ error: "Desculpe, uma falha interna ocorreu no envio do formulário de contato." });
     }
   });
 }

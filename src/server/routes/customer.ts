@@ -98,5 +98,27 @@ export function setupCustomerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to update customer" });
     }
   });
+
+  // Delete customer
+  app.delete("/api/customers/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const barbershopId = req.user?.barbershopId!;
+      const customerRef = db.collection("barbershops")
+        .doc(barbershopId)
+        .collection("customers")
+        .doc(req.params.id);
+
+      const customerDoc = await customerRef.get();
+      if (!customerDoc.exists) {
+        return res.status(404).json({ error: "Cliente não encontrado." });
+      }
+
+      await customerRef.delete();
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error deleting customer:", err);
+      res.status(500).json({ error: "Erro ao excluir cliente." });
+    }
+  });
 }
 

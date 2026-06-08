@@ -37,8 +37,25 @@ export function setupStatsRoutes(app: Express) {
       const todayAppts = appts.filter(a => a.date >= today.toISOString() && a.date < tomorrow.toISOString());
       const yesterdayAppts = appts.filter(a => a.date >= yesterdayStart.toISOString() && a.date < today.toISOString());
 
-      const todayRevenue = todayAppts.reduce((sum, a) => sum + (a.price || 0), 0);
-      const yesterdayRevenue = yesterdayAppts.reduce((sum, a) => sum + (a.price || 0), 0);
+      // Get services mapping to fall back for missing prices in older database documents
+      const servicesSnapshot = await db.collection("barbershops")
+        .doc(barbershopId)
+        .collection("services")
+        .get();
+      const servicesMap = new Map();
+      servicesSnapshot.docs.forEach(doc => {
+        servicesMap.set(doc.id, doc.data());
+      });
+
+      const getApptPrice = (a: any) => {
+        if (a.price !== undefined && a.price !== null) return Number(a.price) || 0;
+        if (a.servicePrice !== undefined && a.servicePrice !== null) return Number(a.servicePrice) || 0;
+        const matchingService = servicesMap.get(a.serviceId);
+        return Number(matchingService?.price) || 0;
+      };
+
+      const todayRevenue = todayAppts.reduce((sum, a) => sum + getApptPrice(a), 0);
+      const yesterdayRevenue = yesterdayAppts.reduce((sum, a) => sum + getApptPrice(a), 0);
 
       // New Customers
       const customersSnapshot = await db.collection("barbershops")

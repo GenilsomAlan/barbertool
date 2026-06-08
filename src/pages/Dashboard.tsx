@@ -7,7 +7,6 @@ import Clientes from "../components/Clientes.tsx";
 import Painel from "../components/Painel.tsx";
 import Configuracoes from "../components/Configuracoes.tsx";
 import Tutorial from "../components/Tutorial.tsx";
-import AdBanner from "../components/AdBanner.tsx";
 import { BookOpen } from "lucide-react";
 
 type Tab = "painel" | "agenda" | "clientes" | "unidade" | "config" | "tutorial";
@@ -34,10 +33,14 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 
-  const refreshBarbershop = () => {
-    api.barbershop.me()
-      .then(setBarbershop)
-      .catch(console.error);
+  const refreshBarbershop = (updatedData?: any) => {
+    if (updatedData) {
+      setBarbershop(updatedData);
+    } else {
+      api.barbershop.me()
+        .then(setBarbershop)
+        .catch(console.error);
+    }
   };
 
   const primaryColor = barbershop?.primaryColor || "#171717"; // fallback to neutral-900
@@ -55,7 +58,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       case "clientes":
         return <Clientes primaryColor={primaryColor} secondaryColor={secondaryColor} />;
       case "config":
-        return <Configuracoes onUpdate={refreshBarbershop} />;
+        return <Configuracoes barbershop={barbershop} onUpdate={refreshBarbershop} />;
       case "tutorial":
         return <Tutorial primaryColor={primaryColor} secondaryColor={secondaryColor} />;
       case "unidade":
@@ -123,12 +126,12 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         <div className="mt-auto p-6 border-t border-neutral-100">
-          <button 
+          <button
             onClick={onLogout}
-            className="flex items-center gap-3 text-neutral-500 hover:text-red-600 transition-colors w-full"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
           >
             <LogOut size={18} />
-            <span className="text-sm font-medium">Sair</span>
+            Sair da Conta
           </button>
         </div>
       </aside>
@@ -188,12 +191,15 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="mt-auto p-6 border-t border-neutral-100">
-              <button 
-                onClick={onLogout}
-                className="flex items-center gap-3 text-neutral-500 hover:text-red-600 transition-colors w-full"
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onLogout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-all font-sans"
               >
                 <LogOut size={18} />
-                <span className="text-sm font-medium">Sair da Conta</span>
+                Sair da Conta
               </button>
             </div>
           </motion.aside>
@@ -234,11 +240,6 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         <div className="flex-1 overflow-auto bg-neutral-50">
           <div className="p-4 md:p-8 max-w-6xl mx-auto">
-            {(barbershop?.subscriptionStatus === 'trial' || barbershop?.subscriptionStatus === 'free_restricted') && (
-              <div className="mb-6 md:mb-8">
-                <AdBanner subscriptionStatus={barbershop?.subscriptionStatus} />
-              </div>
-            )}
             {renderContent()}
           </div>
         </div>

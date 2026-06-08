@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api.ts";
-import { Calendar as CalendarIcon, Clock, User, Phone, Scissors, Plus, X, Check, Loader2, Edit2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Phone, Scissors, Plus, X, Check, Loader2, Edit2, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatPhone, isValidPhone } from "../utils/phone";
 
@@ -9,6 +9,18 @@ export default function Agenda({ primaryColor, secondaryColor }: { primaryColor:
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [rescheduleData, setRescheduleData] = useState<any>(null);
+  const [deletableAppointment, setDeletableAppointment] = useState<any>(null);
+
+  const handleDeleteAppointment = async () => {
+    if (!deletableAppointment) return;
+    try {
+      await api.appointments.delete(deletableAppointment.id);
+      setDeletableAppointment(null);
+      fetchAppointments();
+    } catch (err) {
+      console.error("Error deleting appointment:", err);
+    }
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -143,6 +155,15 @@ export default function Agenda({ primaryColor, secondaryColor }: { primaryColor:
                       <X size={16} className="sm:w-[18px] sm:h-[18px]" />
                     </button>
                   )}
+                  {appointment.status === 'cancelled' && (
+                    <button 
+                      onClick={() => setDeletableAppointment(appointment)}
+                      className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Excluir Agendamento"
+                    >
+                      <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -170,6 +191,16 @@ export default function Agenda({ primaryColor, secondaryColor }: { primaryColor:
               setRescheduleData(null);
               fetchAppointments();
             }}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+          />
+        )}
+        {deletableAppointment && (
+          <DeleteConfirmationModal
+            onClose={() => setDeletableAppointment(null)}
+            onConfirm={handleDeleteAppointment}
+            title="Excluir Agendamento"
+            message={`Tem certeza que deseja excluir o agendamento de ${deletableAppointment.customerName} permanentemente? Esta ação não pode ser desfeita.`}
             primaryColor={primaryColor}
             secondaryColor={secondaryColor}
           />
@@ -596,6 +627,64 @@ function ManageServicesModal({ onClose, onSuccess, primaryColor, secondaryColor 
             {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Salvar Serviço"}
           </button>
         </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function DeleteConfirmationModal({ 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  primaryColor, 
+  secondaryColor 
+}: { 
+  onClose: () => void, 
+  onConfirm: () => void, 
+  title: string, 
+  message: string, 
+  primaryColor: string, 
+  secondaryColor: string 
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl relative z-10 overflow-hidden p-6 text-center space-y-4"
+      >
+        <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
+          <Trash2 size={24} />
+        </div>
+        <div>
+          <h3 className="font-bold text-neutral-900 text-lg">{title}</h3>
+          <p className="text-sm text-neutral-500 mt-2 leading-relaxed">
+            {message}
+          </p>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold rounded-xl transition-all text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all text-sm shadow-sm"
+          >
+            Excluir
+          </button>
+        </div>
       </motion.div>
     </div>
   );

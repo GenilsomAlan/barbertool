@@ -3,15 +3,32 @@ import { api } from "../services/api";
 import { Save, Plus, Trash2, Clock, DollarSign, Settings as SettingsIcon, Scissors, Shield, Bell, Key, ExternalLink, RefreshCw, Link2, Instagram, Facebook, Video, Image as ImageIcon, User as UserIcon, Phone, Zap, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatPhone, isValidPhone } from "../utils/phone";
+import Assinatura from "./Assinatura";
 
-export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
-  const [barbershop, setBarbershop] = useState<any>(null);
+export default function Configuracoes({ barbershop: initialBarbershop, onUpdate }: { barbershop?: any; onUpdate?: (updatedData?: any) => void }) {
+  const [barbershop, setBarbershop] = useState<any>(initialBarbershop || null);
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<"perfil" | "agenda" | "servicos" | "acesso" | "personalizacao">("perfil");
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(prev => prev?.message === message ? null : prev);
+    }, 4500);
+  };
+  const [activeSubTab, setActiveSubTab] = useState<"perfil" | "agenda" | "servicos" | "acesso" | "personalizacao" | "assinatura">("perfil");
   const [users, setUsers] = useState<any[]>([]);
   const [copiedStates, setCopiedStates] = useState<Record<string, 'idle' | 'copied'>>({});
+  const [apiToken, setApiToken] = useState("");
+  const [copiedToken, setCopiedToken] = useState(false);
+
+  const copyApiToken = () => {
+    navigator.clipboard.writeText(apiToken);
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
+  };
 
   // New User Form
   const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", password: "", role: "barber" as "admin" | "barber", avatarUrl: "" });
@@ -35,6 +52,13 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
   const [showAddService, setShowAddService] = useState(false);
 
   useEffect(() => {
+    if (initialBarbershop) {
+      setBarbershop(initialBarbershop);
+    }
+  }, [initialBarbershop]);
+
+  useEffect(() => {
+    setApiToken(localStorage.getItem("token") || "");
     Promise.all([
       api.barbershop.me(),
       api.services.list(),
@@ -48,19 +72,23 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
     .finally(() => setLoading(false));
   }, []);
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveProfile = async (e?: any) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
     if (barbershop?.phone && !isValidPhone(barbershop.phone)) {
-      alert("Por favor, insira um WhatsApp válido para a barbearia.");
+      showToast("Por favor, insira um WhatsApp válido para a barbearia.", "error");
       return;
     }
     setSaving(true);
     try {
-      await api.barbershop.update(barbershop);
-      if (onUpdate) onUpdate();
-      // Optional: show success message if we had a toast system
-    } catch (err) {
+      const updated = await api.barbershop.update(barbershop);
+      setBarbershop(updated);
+      if (onUpdate) onUpdate(updated);
+      showToast("Configurações salvas com sucesso!", "success");
+    } catch (err: any) {
       console.error("Failed to update barbershop profile:", err);
+      showToast(err.message || "Erro ao salvar as configurações.", "error");
     } finally {
       setSaving(false);
     }
@@ -108,7 +136,7 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
     if (!newUser.name || !newUser.email || !newUser.password) return;
     
     if (newUser.phone && !isValidPhone(newUser.phone)) {
-      alert("Por favor, insira um WhatsApp válido para o membro da equipe.");
+      showToast("Por favor, insira um WhatsApp válido para o membro da equipe.", "error");
       return;
     }
 
@@ -129,6 +157,36 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
       setUsers(users.map(u => u.id === userId ? { ...u, bookingToken } : u));
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteSelfAccount = async () => {
+    const typedConfirm = prompt(
+      "Tem certeza que deseja excluir sua conta permanentemente? Esta ação NÃO PODE ser desfeita.\n\nSe você é o administrador, sua barbearia e TODOS os dados associados (serviços, agendamentos, equipe, clientes) serão apagados.\n\nPara confirmar, digite EXCLUIR no campo abaixo:"
+    );
+
+    if (typedConfirm !== "EXCLUIR") {
+      if (typedConfirm !== null) {
+        showToast("Confirmação incorreta. A exclusão de conta foi cancelada.", "error");
+      }
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const res = await api.users.deleteMe();
+      showToast(res.message || "Sua conta foi excluída com sucesso.", "success");
+      
+      // Clear token and redirect to home page, triggering login state teardown
+      setTimeout(() => {
+        localStorage.removeItem("token");
+        window.location.href = "/";
+      }, 2000);
+    } catch (err: any) {
+      console.error("Falha ao se autoexcluir:", err);
+      showToast(err.message || "Erro ao tentar excluir sua conta.", "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -170,15 +228,16 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
       await api.users.updatePassword(changingPasswordFor, newPassword);
       setChangingPasswordFor(null);
       setNewPassword("");
-      alert("Senha alterada com sucesso!");
+      showToast("Senha alterada com sucesso!", "success");
     } catch (err) {
       console.error(err);
-      alert("Falha ao alterar senha.");
+      showToast("Falha ao alterar senha.", "error");
     }
   };
 
   const primaryColor = barbershop?.primaryColor || "#171717";
   const secondaryColor = barbershop?.secondaryColor || "#ffffff";
+  const isEligibleForNewUser = barbershop?.subscriptionStatus === "premium" || barbershop?.subscriptionStatus === "trial" || barbershop?.subscriptionStatus === "active";
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -280,6 +339,17 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
           style={activeSubTab === "personalizacao" ? { color: primaryColor } : {}}
         >
           Visual
+        </button>
+        <button
+          onClick={() => setActiveSubTab("assinatura")}
+          className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeSubTab === "assinatura" 
+              ? "bg-white shadow-sm" 
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+          style={activeSubTab === "assinatura" ? { color: primaryColor } : {}}
+        >
+          Assinatura
         </button>
       </div>
 
@@ -942,7 +1012,7 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
                     </button>
                   </div>
               </motion.div>
-            ) : (
+            ) : activeSubTab === "acesso" ? (
               <motion.div
                 key="acesso"
                 initial={{ opacity: 0, y: 10 }}
@@ -957,14 +1027,51 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
                       <p className="text-neutral-400 text-sm">Gerencie quem tem acesso ao painel da sua barbearia.</p>
                     </div>
                     <button 
-                      onClick={() => setShowAddUser(!showAddUser)}
-                      className="p-2 rounded-xl hover:opacity-90 transition-all font-bold text-sm flex items-center gap-2"
-                      style={{ backgroundColor: primaryColor, color: secondaryColor }}
+                      onClick={() => {
+                        if (!isEligibleForNewUser) {
+                          showToast("A criação de novos acessos (membros de equipe) está disponível apenas nos planos Teste Grátis e Premium. Por favor, atualize sua assinatura para continuar!", "error");
+                          return;
+                        }
+                        setShowAddUser(!showAddUser);
+                      }}
+                      className="p-2 px-4 rounded-xl hover:opacity-90 transition-all font-bold text-sm flex items-center gap-2 border border-transparent"
+                      style={isEligibleForNewUser ? { backgroundColor: primaryColor, color: secondaryColor } : { backgroundColor: "#f5f5f5", color: "#a3a3a3", borderColor: "#e5e5e5", cursor: "not-allowed" }}
                     >
-                      {showAddUser ? <Plus className="rotate-45" size={20} /> : <Plus size={20} />}
+                      {!isEligibleForNewUser ? (
+                        <Lock size={15} />
+                      ) : showAddUser ? (
+                        <Plus className="rotate-45" size={20} />
+                      ) : (
+                        <Plus size={20} />
+                      )}
                       Novo Acesso
                     </button>
                   </div>
+
+                  {!isEligibleForNewUser && (
+                    <div className="mb-8 p-6 bg-amber-50/70 rounded-2xl border border-amber-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex gap-3">
+                        <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl shrink-0 mt-0.5 md:mt-0">
+                          <Lock size={18} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-neutral-900 text-sm">Recurso Premium: Multi-acessos</h4>
+                          <p className="text-xs text-neutral-600 mt-0.5 leading-relaxed max-w-[600px]">
+                            A criação de novos usuários e acessos para membros de equipe está disponível apenas nos planos <strong>Teste Grátis</strong> e <strong>Premium</strong>. Ative hoje e libere acessos individuais para sua equipe!
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          api.payments.createCheckout().then(({ checkoutUrl }) => window.open(checkoutUrl, "_blank"));
+                        }}
+                        className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 self-stretch md:self-auto justify-center"
+                      >
+                        <Zap size={14} className="fill-white" />
+                        Fazer Upgrade
+                      </button>
+                    </div>
+                  )}
 
                   {showAddUser && (
                     <motion.form 
@@ -1207,9 +1314,36 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
                       </div>
                     ))}
                   </div>
+
+                  {/* Danger Zone: delete own account */}
+                  <div className="mt-8 pt-8 border-t border-red-100 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-red-50/50 rounded-2xl border border-red-100">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-red-100 text-red-600 rounded-xl shrink-0">
+                          <Trash2 size={20} />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-red-950 text-sm">Excluir Minha Conta</h4>
+                          <p className="text-xs text-red-700 leading-relaxed max-w-[500px]">
+                            Atenção: Esta ação é definitiva. Se você for o administrador principal, sua barbearia, equipe, agendamentos e clientes serão permanentemente apagados dos servidores.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleDeleteSelfAccount}
+                        disabled={saving}
+                        className="px-5 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-600/10 shrink-0 self-start md:self-center"
+                      >
+                        {saving ? "Excluindo..." : "Excluir Conta"}
+                      </button>
+                    </div>
+                  </div>
+                  
                 </div>
               </motion.div>
-            )}
+            ) : activeSubTab === "assinatura" ? (
+              <Assinatura barbershop={barbershop} onUpdate={onUpdate} />
+            ) : null}
           </AnimatePresence>
         </div>
 
@@ -1242,6 +1376,29 @@ export default function Configuracoes({ onUpdate }: { onUpdate?: () => void }) {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl border text-sm font-semibold transition-all max-w-sm"
+            style={{
+              backgroundColor: notification.type === 'success' ? '#f0fdf4' : '#fef2f2',
+              borderColor: notification.type === 'success' ? '#bbf7d0' : '#fca5a5',
+              color: notification.type === 'success' ? '#15803d' : '#b91c1c'
+            }}
+          >
+            {notification.type === 'success' ? (
+              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white shrink-0 font-bold">✓</div>
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white shrink-0 font-bold">!</div>
+            )}
+            <span>{notification.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

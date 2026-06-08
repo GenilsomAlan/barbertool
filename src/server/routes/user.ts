@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../db.ts";
 import { authenticate, AuthRequest } from "../auth.ts";
 import { z } from "zod";
+import { deleteUserAccountAndData } from "../utils/deleteAccount.ts";
 
 const createUserSchema = z.object({
   name: z.string().min(2),
@@ -48,6 +49,14 @@ export function setupUserRoutes(app: Express) {
         return res.status(403).json({ error: "Only admins can manage users" });
       }
 
+      // Restrict user creation to premium and trial plans
+      const subStatus = req.user?.subscriptionStatus;
+      if (subStatus !== "premium" && subStatus !== "trial" && subStatus !== "active") {
+        return res.status(403).json({ 
+          error: "A funcionalidade de criar novos acessos (membros de equipe) está disponível apenas nos planos Teste Grátis e Premium. Por favor, atualize sua assinatura para continuar." 
+        });
+      }
+
       const { name, email, password, role, phone, avatarUrl } = createUserSchema.parse(req.body);
 
       const existingSnapshot = await db.collection("users").where("email", "==", email).get();
@@ -80,6 +89,24 @@ export function setupUserRoutes(app: Express) {
     } catch (err: any) {
       console.error(err);
       res.status(400).json({ error: err.errors || "Failed to create user" });
+    }
+  });
+
+  app.delete("/api/users/me", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      const role = req.user?.role;
+      const barbershopId = req.user?.barbershopId;
+
+      if (!userId || !role || !barbershopId) {
+        return res.status(400).json({ error: "Sessão inválida" });
+      }
+
+      await deleteUserAccountAndData(userId, role, barbershopId);
+      res.json({ success: true, message: "Sua conta e todos os dados associados foram excluídos com sucesso." });
+    } catch (err: any) {
+      console.error("Erro na autoexclusão de conta:", err);
+      res.status(500).json({ error: err.message || "Falha ao excluir a própria conta" });
     }
   });
 

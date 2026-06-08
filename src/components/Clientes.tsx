@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api.ts";
-import { User, Phone, Mail, Calendar, TrendingUp, History, Loader2, Search, ArrowRight, X, Edit2, Check } from "lucide-react";
+import { User, Phone, Mail, Calendar, TrendingUp, History, Loader2, Search, ArrowRight, X, Edit2, Check, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function Clientes({ primaryColor, secondaryColor }: { primaryColor: string, secondaryColor: string }) {
@@ -13,6 +13,18 @@ export default function Clientes({ primaryColor, secondaryColor }: { primaryColo
   const [history, setHistory] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletableCustomer, setDeletableCustomer] = useState<any | null>(null);
+
+  const handleDeleteCustomer = async () => {
+    if (!deletableCustomer) return;
+    try {
+      await api.customers.delete(deletableCustomer.id);
+      setDeletableCustomer(null);
+      fetchCustomers();
+    } catch (err: any) {
+      console.error("Error deleting customer:", err);
+    }
+  };
 
   const fetchCustomers = () => {
     setLoading(true);
@@ -150,13 +162,20 @@ export default function Clientes({ primaryColor, secondaryColor }: { primaryColo
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => setEditingCustomer({...customer})}
                           className="text-neutral-400 hover:text-neutral-900 p-2 hover:bg-neutral-100 rounded-lg transition-all"
                           title="Editar Cliente"
                         >
                           <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setDeletableCustomer(customer)}
+                          className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-all"
+                          title="Excluir Cliente"
+                        >
+                          <Trash2 size={16} />
                         </button>
                         <button 
                           onClick={() => handleViewHistory(customer)}
@@ -199,12 +218,21 @@ export default function Clientes({ primaryColor, secondaryColor }: { primaryColo
                     <button 
                       onClick={() => setEditingCustomer({...customer})}
                       className="p-2 text-neutral-400 hover:text-neutral-900 rounded-lg transition-all"
+                      title="Editar"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button 
+                      onClick={() => setDeletableCustomer(customer)}
+                      className="p-2 text-red-500 hover:text-red-700 rounded-lg transition-all"
+                      title="Excluir"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button 
                       onClick={() => handleViewHistory(customer)}
                       className="p-2 text-neutral-400 hover:text-neutral-900 rounded-lg transition-all"
+                      title="Histórico"
                     >
                       <ArrowRight size={18} />
                     </button>
@@ -377,7 +405,75 @@ export default function Clientes({ primaryColor, secondaryColor }: { primaryColo
             </motion.div>
           </div>
         )}
+        {deletableCustomer && (
+          <DeleteConfirmationModal
+            onClose={() => setDeletableCustomer(null)}
+            onConfirm={handleDeleteCustomer}
+            title="Excluir Cliente"
+            message={`Tem certeza que deseja excluir o cliente ${deletableCustomer.name} permanentemente? Todos os dados dele serão removidos do sistema.`}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+          />
+        )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function DeleteConfirmationModal({ 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  primaryColor, 
+  secondaryColor 
+}: { 
+  onClose: () => void, 
+  onConfirm: () => void, 
+  title: string, 
+  message: string, 
+  primaryColor: string, 
+  secondaryColor: string 
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl relative z-10 overflow-hidden p-6 text-center space-y-4"
+      >
+        <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
+          <Trash2 size={24} />
+        </div>
+        <div>
+          <h3 className="font-bold text-neutral-900 text-lg">{title}</h3>
+          <p className="text-sm text-neutral-500 mt-2 leading-relaxed">
+            {message}
+          </p>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold rounded-xl transition-all text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all text-sm shadow-sm"
+          >
+            Excluir
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

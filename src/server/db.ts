@@ -1,46 +1,174 @@
-import admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection as fsCollection, 
+  collectionGroup as fsCollectionGroup,
+  doc as fsDoc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query as fsQuery, 
+  where as fsWhere, 
+  orderBy as fsOrderBy, 
+  limit as fsLimit, 
+  writeBatch,
+  DocumentReference as FsDocRef,
+  CollectionReference as FsCollRef,
+  QueryConstraint
+} from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
-import fs from "fs";
-import path from "path";
 
-const distRoot = process.cwd();
+// Initialize Firebase JS SDK using modular mode
+const webConfig = {
+  apiKey: firebaseConfig.apiKey,
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  messagingSenderId: firebaseConfig.messagingSenderId,
+  appId: firebaseConfig.appId,
+};
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  // Try to use provided service account for admin privileges
-  try {
-    const saPath = path.join(distRoot, "service-account.json");
-    if (fs.existsSync(saPath)) {
-      const serviceAccount = JSON.parse(fs.readFileSync(saPath, "utf8"));
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-      console.log("Firebase Admin initialized with service account key.");
-    } else {
-      throw new Error("Service account file not found");
-    }
-  } catch (err) {
-    // Fallback to application default
-    admin.initializeApp({
-      projectId: firebaseConfig.projectId,
-      credential: admin.credential.applicationDefault(),
-    });
-    console.log("Firebase Admin initialized with application default credentials.");
+const app = initializeApp(webConfig);
+const rawDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+export class DocumentSnapshotWrapper {
+  constructor(public rawSnap: any) {}
+  get id(): string { return this.rawSnap.id; }
+  get exists(): boolean { return this.rawSnap.exists(); }
+  get ref(): DocumentReferenceWrapper { return new DocumentReferenceWrapper(this.rawSnap.ref); }
+  data(): any { return this.rawSnap.data(); }
+}
+
+export class DocumentReferenceWrapper {
+  constructor(public rawRef: FsDocRef) {}
+  get id(): string { return this.rawRef.id; }
+  get path(): string { return this.rawRef.path; }
+
+  collection(subpath: string): CollectionReferenceWrapper {
+    return new CollectionReferenceWrapper(fsCollection(this.rawRef, subpath));
+  }
+
+  async get(): Promise<DocumentSnapshotWrapper> {
+    const snap = await getDoc(this.rawRef);
+    return new DocumentSnapshotWrapper(snap);
+  }
+
+  async set(data: any, options?: { merge?: boolean }): Promise<void> {
+    await setDoc(this.rawRef, data, options || {});
+  }
+
+  async update(data: any): Promise<void> {
+    await updateDoc(this.rawRef, data);
+  }
+
+  async delete(): Promise<void> {
+    await deleteDoc(this.rawRef);
   }
 }
 
-// Access the specific database
-export const db = getFirestore(firebaseConfig.firestoreDatabaseId);
-db.settings({ ignoreUndefinedProperties: true });
+export class QuerySnapshotWrapper {
+  constructor(public rawSnap: any) {}
+  get size(): number { return this.rawSnap.size; }
+  get empty(): boolean { return this.rawSnap.empty; }
+  get docs(): DocumentSnapshotWrapper[] {
+    return this.rawSnap.docs.map((doc: any) => new DocumentSnapshotWrapper(doc));
+  }
+}
 
+export class QueryWrapper {
+  constructor(public rawRef: any, public constraints: QueryConstraint[]) {}
+
+  where(fieldPath: string, opStr: any, value: any): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [...this.constraints, fsWhere(fieldPath, opStr, value)]);
+  }
+
+  orderBy(fieldPath: string, directionStr?: "asc" | "desc"): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [...this.constraints, fsOrderBy(fieldPath, directionStr || "asc")]);
+  }
+
+  limit(limitNum: number): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [...this.constraints, fsLimit(limitNum)]);
+  }
+
+  async get(): Promise<QuerySnapshotWrapper> {
+    const q = fsQuery(this.rawRef, ...this.constraints);
+    const snap = await getDocs(q);
+    return new QuerySnapshotWrapper(snap);
+  }
+}
+
+export class CollectionReferenceWrapper {
+  constructor(public rawRef: FsCollRef) {}
+  get id(): string { return this.rawRef.id; }
+
+  doc(id?: string): DocumentReferenceWrapper {
+    const ref = id ? fsDoc(this.rawRef, id) : fsDoc(this.rawRef);
+    return new DocumentReferenceWrapper(ref);
+  }
+
+  async add(data: any): Promise<DocumentReferenceWrapper> {
+    const ref = await addDoc(this.rawRef, data);
+    return new DocumentReferenceWrapper(ref);
+  }
+
+  where(fieldPath: string, opStr: any, value: any): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [fsWhere(fieldPath, opStr, value)]);
+  }
+
+  orderBy(fieldPath: string, directionStr?: "asc" | "desc"): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [fsOrderBy(fieldPath, directionStr || "asc")]);
+  }
+
+  limit(limitNum: number): QueryWrapper {
+    return new QueryWrapper(this.rawRef, [fsLimit(limitNum)]);
+  }
+
+  async get(): Promise<QuerySnapshotWrapper> {
+    const snap = await getDocs(this.rawRef);
+    return new QuerySnapshotWrapper(snap);
+  }
+}
+
+export class WriteBatchWrapper {
+  constructor(public rawBatch: any) {}
+  set(docRef: DocumentReferenceWrapper, data: any, options?: any) {
+    this.rawBatch.set(docRef.rawRef, data, options || {});
+    return this;
+  }
+  update(docRef: DocumentReferenceWrapper, data: any) {
+    this.rawBatch.update(docRef.rawRef, data);
+    return this;
+  }
+  delete(docRef: DocumentReferenceWrapper) {
+    this.rawBatch.delete(docRef.rawRef);
+    return this;
+  }
+  async commit(): Promise<void> {
+    await this.rawBatch.commit();
+  }
+}
+
+// Isomorphic database interface matching compat mode
+export const db = {
+  collection(path: string): CollectionReferenceWrapper {
+    return new CollectionReferenceWrapper(fsCollection(rawDb, path));
+  },
+  collectionGroup(id: string): QueryWrapper {
+    return new QueryWrapper(fsCollectionGroup(rawDb, id), []);
+  },
+  batch(): WriteBatchWrapper {
+    return new WriteBatchWrapper(writeBatch(rawDb));
+  }
+};
 
 export async function initDb() {
-  console.log("Firestore initialized for project:", firebaseConfig.projectId);
+  console.log("Firestore (isomorphic modular wrapper) initialized for project:", firebaseConfig.projectId);
   console.log("Database ID:", firebaseConfig.firestoreDatabaseId);
   
   try {
-    // Basic connectivity test
     await db.collection("_health").doc("check").set({ lastPing: new Date().toISOString() });
     console.log("Firestore connectivity test successful.");
   } catch (err) {
@@ -57,4 +185,3 @@ export function generateSlug(name: string) {
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-

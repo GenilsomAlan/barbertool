@@ -79,6 +79,19 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+    sendRegisterVerificationCode: (email: string) => fetchApi("/auth/send-verification-code", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+    forgotPassword: (email: string) => fetchApi("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+    resetPassword: (data: any) => fetchApi("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+    verifyCoupon: (code: string) => fetchApi(`/auth/verify-coupon/${code}`),
   },
   public: {
     getBarber: (bookingToken: string) => fetchPublic(`/public/barber/${bookingToken}`),
@@ -108,9 +121,13 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ date, serviceId })
     }),
+    delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },
   payments: {
     createCheckout: () => fetchApi("/payments/checkout", { method: "POST" }),
+    createSubscription: (data: any) => fetchApi("/payments/subscribe", { method: "POST", body: JSON.stringify(data) }),
+    getSubscriptionPayments: (id: string) => fetchApi(`/payments/subscription/${id}/payments`),
+    getPixQrCode: (paymentId: string) => fetchApi(`/payments/${paymentId}/pix`),
   },
   customers: {
     list: () => fetchApi("/customers"),
@@ -119,11 +136,13 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data)
     }),
+    delete: (id: string) => fetchApi(`/customers/${id}`, { method: "DELETE" }),
   },
   users: {
     list: () => fetchApi("/users"),
     create: (data: any) => fetchApi("/users", { method: "POST", body: JSON.stringify(data) }),
     delete: (id: string) => fetchApi(`/users/${id}`, { method: "DELETE" }),
+    deleteMe: () => fetchApi("/users/me", { method: "DELETE" }),
     update: (id: string, data: any) => fetchApi(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     updatePassword: (id: string, newPassword: string) => fetchApi(`/users/${id}/password`, {
       method: "PATCH",

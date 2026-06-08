@@ -30,8 +30,28 @@ export function setupAppointmentRoutes(app: Express) {
 
       const snapshot = await queryRef.orderBy("date", "asc").get();
       const appointments = snapshot.docs.map(doc => doc.data());
+
+      // Pre-fetch services to ensure price is populated for legacy entries in reports and frontend UI
+      const servicesSnapshot = await db.collection("barbershops")
+        .doc(barbershopId)
+        .collection("services")
+        .get();
+      const servicesMap = new Map();
+      servicesSnapshot.docs.forEach(doc => {
+        servicesMap.set(doc.id, doc.data());
+      });
+
+      const updatedAppointments = appointments.map(appt => {
+        const matchingService = servicesMap.get(appt.serviceId);
+        const resolvedPrice = appt.price !== undefined ? appt.price : (appt.servicePrice !== undefined ? appt.servicePrice : (matchingService?.price || 0));
+        return {
+          ...appt,
+          price: resolvedPrice,
+          servicePrice: resolvedPrice
+        };
+      });
       
-      res.json(appointments);
+      res.json(updatedAppointments);
     } catch (err) {
       console.error("Error listing appointments:", err);
       res.status(500).json({ error: "Failed to list appointments" });
@@ -105,6 +125,8 @@ export function setupAppointmentRoutes(app: Express) {
         userId: barberId,
         serviceId,
         serviceName: service?.name,
+        servicePrice: service?.price || 0,
+        price: service?.price || 0,
         barberName,
         customerName,
         customerPhone,
@@ -288,6 +310,33 @@ export function setupAppointmentRoutes(app: Express) {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to update appointment" });
+    }
+  });
+
+  // Delete cancelled appointment
+  app.delete("/api/appointments/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const barbershopId = req.user?.barbershopId!;
+      const appointmentRef = db.collection("barbershops")
+        .doc(barbershopId)
+        .collection("appointments")
+        .doc(req.params.id);
+
+      const apptDoc = await appointmentRef.get();
+      if (!apptDoc.exists) {
+        return res.status(404).json({ error: "Agendamento não encontrado." });
+      }
+
+      const appt = apptDoc.data();
+      if (appt?.status !== "cancelled") {
+        return res.status(400).json({ error: "Apenas agendamentos cancelados podem ser excluídos." });
+      }
+
+      await appointmentRef.delete();
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error deleting appointment:", err);
+      res.status(500).json({ error: "Erro ao excluir agendamento." });
     }
   });
 }

@@ -15,6 +15,7 @@ import { setupNotificationRoutes } from "./src/server/routes/notification.ts";
 import { setupPaymentRoutes } from "./src/server/routes/payment.ts";
 import { setupAdminRoutes } from "./src/server/routes/admin.ts";
 import { initDb } from "./src/server/db.ts";
+import { startInactivityCleanupJob } from "./src/server/jobs/cleanup.ts";
 
 async function startServer() {
   const app = express();
@@ -22,6 +23,9 @@ async function startServer() {
 
   // Initialize DB
   await initDb();
+
+  // Start Background Inactivity Daemon
+  startInactivityCleanupJob();
 
   if (!process.env.JWT_SECRET) {
     console.warn("WARNING: JWT_SECRET is not set in environment variables. Using a fallback secret is not recommended for production.");

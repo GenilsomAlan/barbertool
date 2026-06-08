@@ -2,6 +2,14 @@ import { Express, Response } from "express";
 import { authenticate, AuthRequest } from "../auth.ts";
 import { db } from "../db.ts";
 
+const VALID_COUPONS: Record<string, number> = {
+  "DESCONTO10": 10,
+  "BARBER30": 30,
+  "VIP50": 50,
+  "FREE100": 100,
+  "MESTRE20": 20,
+};
+
 export function setupBarbershopRoutes(app: Express) {
   app.get("/api/barbershop/me", authenticate, async (req: AuthRequest, res: Response) => {
     try {
@@ -17,7 +25,7 @@ export function setupBarbershopRoutes(app: Express) {
   });
 
   app.patch("/api/barbershop", authenticate, async (req: AuthRequest, res: Response) => {
-    const { name, address, description, phone, openTime, closeTime, slotDuration, lunchStartTime, lunchEndTime, workingDays, primaryColor, secondaryColor, logoUrl, instagram, tiktok, facebook, schedulingType } = req.body;
+    const { name, address, description, phone, openTime, closeTime, slotDuration, lunchStartTime, lunchEndTime, workingDays, primaryColor, secondaryColor, logoUrl, instagram, tiktok, facebook, schedulingType, couponCode } = req.body;
     
     try {
       const barbershopRef = db.collection("barbershops").doc(req.user?.barbershopId!);
@@ -40,6 +48,25 @@ export function setupBarbershopRoutes(app: Express) {
       if (tiktok !== undefined) updateData.tiktok = tiktok || null;
       if (facebook !== undefined) updateData.facebook = facebook || null;
       if (schedulingType !== undefined) updateData.schedulingType = schedulingType || 'fixed';
+
+      if (couponCode !== undefined) {
+        if (couponCode === null || couponCode === "") {
+          updateData.appliedCoupon = null;
+          updateData.discountPercent = null;
+        } else {
+          const upperCode = couponCode.trim().toUpperCase();
+          const couponDoc = await db.collection("coupons").doc(upperCode).get();
+          if (couponDoc.exists) {
+            updateData.appliedCoupon = upperCode;
+            updateData.discountPercent = couponDoc.data()?.discountPercent;
+          } else if (VALID_COUPONS[upperCode] !== undefined) {
+            updateData.appliedCoupon = upperCode;
+            updateData.discountPercent = VALID_COUPONS[upperCode];
+          } else {
+            return res.status(400).json({ error: "Cupom inválido ou expirado." });
+          }
+        }
+      }
 
       await barbershopRef.update(updateData);
       

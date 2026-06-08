@@ -46,6 +46,7 @@
         "plan": { "type": "string", "enum": ["free", "premium"] },
         "avatarUrl": { "type": "string" },
         "bookingToken": { "type": "string" },
+        "lastActiveAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["barbershopId", "name", "email", "role"]
