@@ -117,9 +117,9 @@ export const api = {
       method: "PATCH", 
       body: JSON.stringify({ status }) 
     }),
-    reschedule: (id: string, date: string, serviceId?: string) => fetchApi(`/appointments/${id}`, {
+    reschedule: (id: string, date: string, serviceId?: string, customerName?: string, customerPhone?: string) => fetchApi(`/appointments/${id}`, {
       method: "PATCH",
-      body: JSON.stringify({ date, serviceId })
+      body: JSON.stringify({ date, serviceId, customerName, customerPhone })
     }),
     delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },

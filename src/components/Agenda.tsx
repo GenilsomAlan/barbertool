@@ -215,10 +215,13 @@ function RescheduleModal({ appointment, onClose, onSuccess, primaryColor, second
   const [formData, setFormData] = useState({
     date: new Date(appointment.date).toISOString().split('T')[0],
     time: new Date(appointment.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }),
-    serviceId: appointment.serviceId
+    serviceId: appointment.serviceId,
+    customerName: appointment.customerName || "",
+    customerPhone: appointment.customerPhone || ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
   useEffect(() => {
     api.services.list().then(setServices);
@@ -226,11 +229,44 @@ function RescheduleModal({ appointment, onClose, onSuccess, primaryColor, second
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.customerName.trim()) {
+      setError("Por favor, preencha o nome do cliente.");
+      return;
+    }
+    if (formData.customerPhone && !isValidPhone(formData.customerPhone)) {
+      setError("Por favor, insira um WhatsApp válido para o cliente (com DDD).");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
       const dateTime = `${formData.date}T${formData.time}:00`;
-      await api.appointments.reschedule(appointment.id, dateTime, formData.serviceId);
+      await api.appointments.reschedule(
+        appointment.id,
+        dateTime,
+        formData.serviceId,
+        formData.customerName,
+        formData.customerPhone
+      );
+
+      if (sendWhatsApp && formData.customerPhone) {
+        const cleanPhone = formData.customerPhone.replace(/\D/g, "");
+        const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+        
+        const selectedService = services.find(s => s.id === formData.serviceId);
+        const serviceName = selectedService ? selectedService.name : appointment.serviceName || "Serviço";
+        
+        let formattedDateString = formData.date;
+        if (formData.date.includes("-")) {
+          const [year, month, day] = formData.date.split("-");
+          formattedDateString = `${day}/${month}/${year}`;
+        }
+        
+        const msg = `Olá *${formData.customerName}*! Seu agendamento foi alterado com sucesso!\n\n📅 *Nova Data:* ${formattedDateString}\n⏰ *Novo Horário:* ${formData.time}\n✂️ *Serviço:* ${serviceName}\n\nEsperamos você!`;
+        const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, "_blank");
+      }
+
       onSuccess();
     } catch (err: any) {
       console.error(err);
@@ -257,15 +293,15 @@ function RescheduleModal({ appointment, onClose, onSuccess, primaryColor, second
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl relative z-10 overflow-hidden"
+        className="bg-white w-full max-w-sm rounded-[28px] shadow-2xl relative z-10 overflow-hidden"
       >
         <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-          <h3 className="font-bold text-neutral-900">Reagendar Atendimento</h3>
+          <h3 className="font-bold text-neutral-900">Editar/Reagendar Agendamento</h3>
           <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-400">
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <AnimatePresence>
             {error && (
               <motion.div 
@@ -281,11 +317,31 @@ function RescheduleModal({ appointment, onClose, onSuccess, primaryColor, second
               </motion.div>
             )}
           </AnimatePresence>
-          <div>
-            <p className="text-xs text-neutral-500 mb-4 bg-neutral-50 p-3 rounded-xl">
-              Alterando horário de: <span className="font-bold text-neutral-900">{appointment.customerName}</span>
-            </p>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Nome do Cliente</label>
+            <input 
+              type="text"
+              required
+              value={formData.customerName}
+              onChange={e => setFormData({...formData, customerName: e.target.value})}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-neutral-900 outline-none"
+              placeholder="Nome do cliente"
+            />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">WhatsApp do Cliente</label>
+            <input 
+              type="text"
+              required
+              value={formData.customerPhone}
+              onChange={e => setFormData({...formData, customerPhone: formatPhone(e.target.value)})}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-neutral-900 outline-none"
+              placeholder="WhatsApp do cliente"
+            />
+          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Serviço</label>
             <select 
@@ -320,13 +376,25 @@ function RescheduleModal({ appointment, onClose, onSuccess, primaryColor, second
               className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-neutral-900 outline-none"
             />
           </div>
+          <div className="flex items-center gap-2.5 py-1">
+            <input 
+              type="checkbox"
+              id="sendWhatsApp"
+              checked={sendWhatsApp}
+              onChange={e => setSendWhatsApp(e.target.checked)}
+              className="w-4 h-4 text-neutral-900 border-neutral-300 rounded focus:ring-neutral-900 accent-neutral-900 cursor-pointer"
+            />
+            <label htmlFor="sendWhatsApp" className="text-xs font-semibold text-neutral-600 cursor-pointer select-none">
+              Enviar confirmação por WhatsApp
+            </label>
+          </div>
           <button 
             type="submit"
             disabled={isLoading}
             className="w-full py-3 rounded-xl font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-4"
             style={{ backgroundColor: primaryColor, color: secondaryColor }}
           >
-            {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Confirmar Alteração"}
+            {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Confirmar Alterações"}
           </button>
         </form>
       </motion.div>

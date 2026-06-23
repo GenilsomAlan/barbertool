@@ -223,14 +223,14 @@ export function setupAppointmentRoutes(app: Express) {
     }
   });
 
-  // Update appointment details (Date/Time/Service)
+  // Update appointment details (Date/Time/Service and Customer)
   app.patch("/api/appointments/:id", authenticate, async (req: AuthRequest, res: Response) => {
     try {
-      const { date, serviceId } = req.body;
+      const { date, serviceId, customerName, customerPhone } = req.body;
       const barbershopId = req.user?.barbershopId!;
 
-      if (!date && !serviceId) {
-        return res.status(400).json({ error: "Date or serviceId is required" });
+      if (!date && !serviceId && !customerName && !customerPhone) {
+        return res.status(400).json({ error: "No fields to update provided." });
       }
 
       const appointmentRef = db.collection("barbershops")
@@ -290,12 +290,58 @@ export function setupAppointmentRoutes(app: Express) {
         return res.status(409).json({ error: "Este horário conflita com outro agendamento já existente." });
       }
 
-      await appointmentRef.update({
+      const updateData: any = {
         date: targetDate,
         serviceId: targetServiceId,
         serviceName: service?.name,
         duration: duration
-      });
+      };
+
+      if (customerName) {
+        updateData.customerName = customerName;
+      }
+      if (customerPhone) {
+        updateData.customerPhone = customerPhone;
+      }
+
+      await appointmentRef.update(updateData);
+
+      // Handle customer subcollection updates
+      if (customerName || customerPhone) {
+        const customersRef = db.collection("barbershops").doc(barbershopId).collection("customers");
+        const oldPhone = appt?.customerPhone;
+        
+        if (oldPhone) {
+          const customerSnapshot = await customersRef.where("phone", "==", oldPhone).get();
+          if (!customerSnapshot.empty) {
+            const cDoc = customerSnapshot.docs[0];
+            const updateCustomerData: any = {};
+            if (customerName) updateCustomerData.name = customerName;
+            if (customerPhone) updateCustomerData.phone = customerPhone;
+            await cDoc.ref.update(updateCustomerData);
+          } else if (customerPhone) {
+            const newPhoneSnapshot = await customersRef.where("phone", "==", customerPhone).get();
+            if (newPhoneSnapshot.empty) {
+              const customerId = uuidv4();
+              await customersRef.doc(customerId).set({
+                id: customerId,
+                barbershopId,
+                name: customerName || appt?.customerName || "",
+                phone: customerPhone,
+                lastVisit: targetDate,
+                appointmentsCount: 1,
+                totalSpent: service?.price || appt?.price || 0,
+                createdAt: new Date().toISOString()
+              });
+            } else {
+              const cDoc = newPhoneSnapshot.docs[0];
+              const updateCustomerData: any = {};
+              if (customerName) updateCustomerData.name = customerName;
+              await cDoc.ref.update(updateCustomerData);
+            }
+          }
+        }
+      }
 
       if (date && date !== appt?.date) {
         createNotification(

@@ -200,9 +200,14 @@ export function setupPublicRoutes(app: Express) {
         }
       }
       
-      const now = new Date();
-      const isToday = dateStr === now.toISOString().split("T")[0];
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowInBrazil = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const bYear = nowInBrazil.getFullYear();
+      const bMonth = String(nowInBrazil.getMonth() + 1).padStart(2, "0");
+      const bDay = String(nowInBrazil.getDate()).padStart(2, "0");
+      const brazilDateStr = `${bYear}-${bMonth}-${bDay}`;
+      
+      const isToday = dateStr === brazilDateStr;
+      const currentMinutes = nowInBrazil.getHours() * 60 + nowInBrazil.getMinutes();
       
       const availableSlots = allSlots.filter(slot => {
         const [h, m] = slot.split(":").map(Number);
