@@ -124,10 +124,9 @@ export const api = {
     delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },
   payments: {
-    createCheckout: () => fetchApi("/payments/checkout", { method: "POST" }),
     createSubscription: (data: any) => fetchApi("/payments/subscribe", { method: "POST", body: JSON.stringify(data) }),
-    getSubscriptionPayments: (id: string) => fetchApi(`/payments/subscription/${id}/payments`),
-    getPixQrCode: (paymentId: string) => fetchApi(`/payments/${paymentId}/pix`),
+    getSubscription: () => fetchApi("/payments/subscription"),
+    cancel: () => fetchApi("/payments/subscription/cancel", { method: "POST" }),
   },
   customers: {
     list: () => fetchApi("/customers"),

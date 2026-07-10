@@ -11,11 +11,13 @@ import { setupAppointmentRoutes } from "./src/server/routes/appointment.ts";
 import { setupCustomerRoutes } from "./src/server/routes/customer.ts";
 import { setupStatsRoutes } from "./src/server/routes/stats.ts";
 import { setupPublicRoutes } from "./src/server/routes/public.ts";
+import { setupWebhookRoutes } from "./src/server/routes/webhook.ts";
 import { setupNotificationRoutes } from "./src/server/routes/notification.ts";
 import { setupPaymentRoutes } from "./src/server/routes/payment.ts";
 import { setupAdminRoutes } from "./src/server/routes/admin.ts";
 import { initDb } from "./src/server/db.ts";
 import { startInactivityCleanupJob } from "./src/server/jobs/cleanup.ts";
+import { mercadoPagoClient } from "./src/config/mercadopago.ts";
 
 async function startServer() {
   const app = express();
@@ -37,6 +39,7 @@ async function startServer() {
 
   // API Routes
   setupPublicRoutes(app);
+  setupWebhookRoutes(app);
   setupAuthRoutes(app);
   setupBarbershopRoutes(app);
   setupUserRoutes(app);

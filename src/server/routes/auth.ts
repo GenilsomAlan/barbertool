@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { db, generateSlug } from "../db.ts";
 import { signToken } from "../auth.ts";
 import { z } from "zod";
+import { TRIAL_DAYS } from "../../config/payment.ts";
 
 const VALID_COUPONS: Record<string, number> = {
   "DESCONTO10": 10,
@@ -12,6 +13,7 @@ const VALID_COUPONS: Record<string, number> = {
   "VIP50": 50,
   "FREE100": 100,
   "MESTRE20": 20,
+  "FREEFV": 100,
 };
 
 const registerSchema = z.object({
@@ -184,7 +186,7 @@ export function setupAuthRoutes(app: Express) {
 
       const now = new Date();
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(now.getDate() + 21);
+      trialEndsAt.setDate(now.getDate() + TRIAL_DAYS);
 
       let appliedCoupon = null;
       let discountPercent = null;
@@ -194,11 +196,13 @@ export function setupAuthRoutes(app: Express) {
         if (couponDoc.exists) {
           appliedCoupon = uppercaseCoupon;
           discountPercent = couponDoc.data()?.discountPercent;
-        } else if (VALID_COUPONS[uppercaseCoupon]) {
+        } else if (VALID_COUPONS[uppercaseCoupon] !== undefined) {
           appliedCoupon = uppercaseCoupon;
           discountPercent = VALID_COUPONS[uppercaseCoupon];
         }
       }
+
+      const isLifetimeFree = appliedCoupon === "FREEFV";
 
       const barbershopData = {
         id: barbershopId,
@@ -206,7 +210,7 @@ export function setupAuthRoutes(app: Express) {
         slug: finalSlug,
         phone: phone || null,
         email,
-        subscriptionStatus: "trial",
+        subscriptionStatus: isLifetimeFree ? "premium" : "trial",
         trialEndsAt: trialEndsAt.toISOString(),
         createdAt: now.toISOString(),
         primaryColor: "#000000",

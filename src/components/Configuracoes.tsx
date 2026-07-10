@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
+import { PREMIUM_PLAN_NAME, PREMIUM_PLAN_AMOUNT } from "../config/payment.ts";
 import { Save, Plus, Trash2, Clock, DollarSign, Settings as SettingsIcon, Scissors, Shield, Bell, Key, ExternalLink, RefreshCw, Link2, Instagram, Facebook, Video, Image as ImageIcon, User as UserIcon, Phone, Zap, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatPhone, isValidPhone } from "../utils/phone";
@@ -269,8 +270,17 @@ export default function Configuracoes({ barbershop: initialBarbershop, onUpdate 
              </div>
           </div>
           <button 
-            onClick={() => {
-               api.payments.createCheckout().then(({ checkoutUrl }) => window.open(checkoutUrl, "_blank"));
+            onClick={async () => {
+               try {
+                 const res = await api.payments.createSubscription({ planName: PREMIUM_PLAN_NAME, amount: PREMIUM_PLAN_AMOUNT });
+                 if (res && res.checkoutUrl) {
+                   window.location.href = res.checkoutUrl;
+                 } else {
+                   alert("Não foi possível gerar o link de checkout do Mercado Pago.");
+                 }
+               } catch (err: any) {
+                 alert(err.message || "Erro ao iniciar o processo de contratação da assinatura.");
+               }
             }}
             className="w-full md:w-auto px-8 py-4 bg-white text-neutral-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
           >
@@ -1062,8 +1072,17 @@ export default function Configuracoes({ barbershop: initialBarbershop, onUpdate 
                         </div>
                       </div>
                       <button
-                        onClick={() => {
-                          api.payments.createCheckout().then(({ checkoutUrl }) => window.open(checkoutUrl, "_blank"));
+                        onClick={async () => {
+                          try {
+                            const res = await api.payments.createSubscription({ planName: PREMIUM_PLAN_NAME, amount: PREMIUM_PLAN_AMOUNT });
+                            if (res && res.checkoutUrl) {
+                              window.location.href = res.checkoutUrl;
+                            } else {
+                              alert("Não foi possível gerar o link de checkout do Mercado Pago.");
+                            }
+                          } catch (err: any) {
+                            alert(err.message || "Erro ao iniciar o processo de contratação da assinatura.");
+                          }
                         }}
                         className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 self-stretch md:self-auto justify-center"
                       >

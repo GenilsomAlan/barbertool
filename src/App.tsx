@@ -10,7 +10,6 @@ import Blog from "./pages/Blog.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import TermsOfUse from "./pages/TermsOfUse.tsx";
 import Contact from "./pages/Contact.tsx";
-import Checkout from "./pages/Checkout.tsx";
 import { api } from "./services/api.ts";
 
 export default function App() {
@@ -40,9 +39,7 @@ export default function App() {
           {/* Consumer Booking Route */}
           <Route path="/book/:bookingToken" element={<BookingPage />} />
           
-          {/* Checkout & Subscriptions Route */}
-          <Route path="/checkout" element={<Checkout />} />
-          
+
           {/* Auth Routes */}
           <Route 
             path="/login" 

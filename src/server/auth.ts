@@ -48,8 +48,13 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
     const barbershop = shopDoc.data();
     let currentStatus = barbershop?.subscriptionStatus;
 
-    // Auto-update status if trial expired
-    if (currentStatus === 'trial' && barbershop?.trialEndsAt) {
+    // Support lifetime free premium access for users with FREEFV coupon
+    if (barbershop?.appliedCoupon?.toUpperCase() === "FREEFV") {
+      if (currentStatus !== "premium") {
+        await shopRef.update({ subscriptionStatus: "premium" });
+        currentStatus = "premium";
+      }
+    } else if (currentStatus === 'trial' && barbershop?.trialEndsAt) {
       const now = new Date();
       const trialEnd = new Date(barbershop.trialEndsAt);
       

@@ -1,0 +1,35 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "barbershops",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "mpSubscriptionId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "barbershops",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "mpCustomerId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "barbershops",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "subscriptionStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

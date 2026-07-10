@@ -25,9 +25,16 @@
         "workingDays": { "type": "string" },
         "primaryColor": { "type": "string" },
         "secondaryColor": { "type": "string" },
-        "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "cancelled"] },
+        "subscriptionStatus": { "type": "string" },
         "trialEndsAt": { "type": "string", "format": "date-time" },
-        "asaasCustomerId": { "type": "string" },
+        "mpCustomerId": { "type": "string" },
+        "mpSubscriptionId": { "type": "string" },
+        "subscriptionCheckoutUrl": { "type": "string" },
+        "subscriptionUpdatedAt": { "type": "string", "format": "date-time" },
+        "subscriptionProcessing": { "type": "boolean" },
+        "subscriptionProcessingStartedAt": { "type": "string", "format": "date-time" },
+        "subscriptionProcessToken": { "type": "string" },
+        "subscriptionCancelledAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "slug"]

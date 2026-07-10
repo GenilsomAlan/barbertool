@@ -1,20 +1,26 @@
 # Guia de Configuração de Produção
 
-Este documento detalha como configurar as integrações de Terceiros (Asaas ou de e-mail) para o seu sistema de barbearia.
+Este documento detalha como configurar as integrações de Terceiros (Mercado Pago e E-mail) para o seu sistema de barbearia.
 
-## 1. Asaas (Pagamentos)
+## 1. Mercado Pago (Pagamentos)
 
-O sistema utiliza o **Asaas** para gerenciar assinaturas Premium via Pix, Boleto ou Cartão.
+O sistema utiliza o **Mercado Pago** para gerenciar assinaturas Premium recorrentes via PreApproval.
 
-1.  Crie uma conta em [https://www.asaas.com](https://www.asaas.com) (ou [sandbox.asaas.com](https://sandbox.asaas.com) para testes).
-2.  Vá em **Configurações da Conta > Integrações** e gere uma **Chave de API (Access Token)**.
+1.  Crie uma conta de desenvolvedor no [Mercado Pago Developers](https://developers.mercadopago.com).
+2.  Crie uma nova aplicação no painel para obter suas credenciais de produção e de testes (Sandbox).
 3.  No seu ambiente de hospedagem, configure as seguintes variáveis no arquivo `.env` ou nas configurações do servidor:
-    *   `ASAAS_API_URL`: Use `https://api.asaas.com/api/v3` para produção.
-    *   `ASAAS_API_KEY`: Cole aqui o seu Access Token.
-4.  **Webhook**: Configure o Webhook no painel do Asaas para apontar para `https://seu-dominio.com/api/payments/webhook`. Marque os eventos de "Pagamento Recebido" e "Pagamento Confirmado".
+    *   `MP_ACCESS_TOKEN`: O Token de acesso privado (começa com `APP_USR-`).
+    *   `MP_PUBLIC_KEY`: A chave pública (começa com `APP_USR-`).
+    *   `MP_WEBHOOK_SECRET`: O segredo de validação HMAC obtido na configuração do webhook (obrigatório se `NODE_ENV=production`).
+    *   `MP_ENV`: Use `sandbox` para desenvolvimento/testes e `production` para faturamento real.
+4.  **Webhook**: Cadastre a URL de webhook no painel de desenvolvedores do Mercado Pago apontando para:
+    `https://seu-dominio.com/api/webhooks/mercadopago`
+    E selecione para receber notificações de:
+    *   `subscription_preapproval` (assinaturas)
+    *   `payment` (pagamentos)
+    *   `subscription_authorized_payment` (faturas)
 
 ## 2. Segurança e E-mail Support
 
 1.  **JWT_SECRET**: Defina uma chave secreta forte para os tokens de usuário.
-2.  **SUPPORT_EMAIL_USER** e **SUPPORT_EMAIL_PASS**: Configuração opcional para envio automático de e-mails via SMTP do Gmail. 
-
+2.  **SUPPORT_EMAIL_USER** e **SUPPORT_EMAIL_PASS**: Configuração opcional para envio automático de e-mails via SMTP do Gmail.

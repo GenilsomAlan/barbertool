@@ -8,6 +8,7 @@ const VALID_COUPONS: Record<string, number> = {
   "VIP50": 50,
   "FREE100": 100,
   "MESTRE20": 20,
+  "FREEFV": 100,
 };
 
 export function setupBarbershopRoutes(app: Express) {
@@ -64,6 +65,10 @@ export function setupBarbershopRoutes(app: Express) {
             updateData.discountPercent = VALID_COUPONS[upperCode];
           } else {
             return res.status(400).json({ error: "Cupom inválido ou expirado." });
+          }
+
+          if (upperCode === "FREEFV") {
+            updateData.subscriptionStatus = "premium";
           }
         }
       }
