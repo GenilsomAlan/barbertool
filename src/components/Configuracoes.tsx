@@ -270,7 +270,8 @@ export default function Configuracoes({ barbershop: initialBarbershop, onUpdate 
           </div>
           <button 
             onClick={() => {
-               api.payments.createSubscription({}).then(({ checkoutUrl }) => { window.location.href = checkoutUrl; });
+               // Pagamento Asaas/Mercado Pago removido — stub retornando aviso de pagamento desativado
+               alert("Pagamento online desativado — escolha pagamento no local ou entre em contato.");
             }}
             className="w-full md:w-auto px-8 py-4 bg-white text-neutral-900 font-bold rounded-2xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
           >
@@ -1063,7 +1064,8 @@ export default function Configuracoes({ barbershop: initialBarbershop, onUpdate 
                       </div>
                       <button
                         onClick={() => {
-                          api.payments.createSubscription({}).then(({ checkoutUrl }) => { window.location.href = checkoutUrl; });
+                          // Pagamento Asaas/Mercado Pago removido — stub retornando aviso de pagamento desativado
+                          alert("Pagamento online desativado — escolha pagamento no local ou entre em contato.");
                         }}
                         className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 self-stretch md:self-auto justify-center"
                       >

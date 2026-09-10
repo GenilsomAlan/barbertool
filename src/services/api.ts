@@ -123,6 +123,7 @@ export const api = {
     }),
     delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },
+  // Integrações com Asaas e Mercado Pago removidas — endpoints substituídos por stubs seguros que retornam status disabled
   payments: {
     ensureAsaasCustomer: () => fetchApi("/payments/asaas/customer", { method: "POST" }),
     createSubscription: (data: any) => fetchApi("/payments/subscribe", { method: "POST", body: JSON.stringify(data) }),

@@ -1,31 +1,26 @@
-import { createOrGetAsaasCustomer, asaasFetch } from "../server/services/asaasService.ts";
+// Pagamento Asaas e Mercado Pago removidos — teste adaptado para validar stub PAYMENT_PROVIDER_DISABLED
+import { getPaymentDisabledResponse } from "../server/services/paymentDisabled.ts";
 
 /**
- * Script de Teste / Validação para a Etapa 1 da Integração com Asaas.
- * Testa os 3 cenários exigidos:
- * 1. Usuário sem asaasCustomerId (Criação de cliente no Asaas e armazenamento no banco).
- * 2. Usuário com asaasCustomerId existente (Reutilização sem duplicação).
- * 3. Tratamento de Erros da API do Asaas (Sem vazamento de credenciais).
+ * Script de Teste / Validação para stubs de pagamentos desativados (Asaas e Mercado Pago).
  */
-export async function runAsaasStage1Tests() {
-  console.log("=== INICIANDO TESTES DA ETAPA 1 DA INTEGRAÇÃO COM ASAAS ===");
+export async function runPaymentDisabledTests() {
+  console.log("=== INICIANDO TESTES DO STUB DE PAGAMENTOS DESATIVADOS ===");
 
-  // Cenário 3: Validação de Tratamento de Erros sem expor API Key
-  console.log("\n--- Cenário 3: Testando tratamento de erros e segurança de credenciais ---");
-  try {
-    process.env.ASAAS_API_KEY = ""; // Simula ausência de chave
-    await asaasFetch("/customers");
-    console.error("❌ FALHA: Deveria ter retornado erro por falta de API Key.");
-  } catch (err: any) {
-    if (err.message && !err.message.includes("secret") && !err.message.includes("key_123")) {
-      console.log("✅ Cenário 3 PASSOU: Erro tratado com segurança sem expor segredos:", err.message);
-    } else {
-      console.error("❌ FALHA no Cenário 3:", err.message);
-    }
+  const asaasStub = getPaymentDisabledResponse("ASAAS");
+  if (asaasStub.status === "disabled" && asaasStub.provider === "ASAAS") {
+    console.log("✅ Asaas stub validado com sucesso:", asaasStub.message);
+  } else {
+    throw new Error("❌ Falha na validação do stub Asaas.");
   }
 
-  // Restaura chave para simulação
-  process.env.ASAAS_API_KEY = process.env.ASAAS_API_KEY || "test_dummy_key";
+  const mpStub = getPaymentDisabledResponse("MERCADOPAGO");
+  if (mpStub.status === "disabled" && mpStub.provider === "MERCADOPAGO") {
+    console.log("✅ Mercado Pago stub validado com sucesso:", mpStub.message);
+  } else {
+    throw new Error("❌ Falha na validação do stub Mercado Pago.");
+  }
 
-  console.log("\n=== CONCLUÍDOS OS TESTES DA ETAPA 1 DO ASAAS ===");
+  console.log("=== TESTES DE PAGAMENTOS DESATIVADOS CONCLUÍDOS COM SUCESSO ===");
 }
+

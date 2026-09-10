@@ -504,7 +504,14 @@ export default function BookingPage() {
                   )}
                 </AnimatePresence>
 
-                <div className="pt-4">
+                {/* Provedores de pagamento Asaas e Mercado Pago removidos — fluxo direto com pagamento no local */}
+                <div className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-center">
+                  <p className="text-xs text-neutral-400">
+                    Pagamento online desativado — escolha pagamento no local ou entre em contato
+                  </p>
+                </div>
+
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={submitting || !customerName || !isValidPhone(customerPhone)}

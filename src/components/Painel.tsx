@@ -12,17 +12,9 @@ export default function Painel({ barbershopName, primaryColor, secondaryColor, s
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
 
-  const handleUpgrade = async () => {
-    setIsUpgrading(true);
-    try {
-      const { checkoutUrl } = await api.payments.createSubscription({});
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar checkout. Verifique sua conexão.");
-    } finally {
-      setIsUpgrading(false);
-    }
+  // Provedores de pagamento Asaas e Mercado Pago removidos — stub de aviso ao usuário
+  const handleUpgrade = () => {
+    alert("Pagamento online desativado — escolha pagamento no local ou entre em contato.");
   };
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
@@ -311,7 +303,7 @@ export default function Painel({ barbershopName, primaryColor, secondaryColor, s
                     <Lock size={28} />
                   </div>
                   <h3 className="text-xl font-bold text-neutral-900">Plano Premium</h3>
-                  <p className="text-sm text-neutral-500 leading-relaxed">Seu Trial expirou. Assine o plano Premium para desbloquear estatísticas e relatórios avançados.</p>
+                  <p className="text-sm text-neutral-500 leading-relaxed">Pagamento online desativado — escolha pagamento no local ou entre em contato.</p>
                   <button 
                     className="w-full py-4 bg-neutral-900 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-neutral-900/20 disabled:opacity-50"
                     onClick={handleUpgrade}

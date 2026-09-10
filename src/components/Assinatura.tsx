@@ -1,18 +1,14 @@
+// Provedores de pagamento Asaas e Mercado Pago removidos — stub retornando aviso de pagamento desativado
 import React, { useState } from "react";
-import { api } from "../services/api";
-import { Check, ShieldAlert, CreditCard, Calendar, Zap, Lock, Clock, ExternalLink, HelpCircle } from "lucide-react";
+import { Check, ShieldAlert, CreditCard, Lock, Clock, ExternalLink, HelpCircle, Info } from "lucide-react";
 import { motion } from "motion/react";
-import { useNavigate } from "react-router-dom";
 
 interface AssinaturaProps {
   barbershop: any;
   onUpdate?: () => void;
 }
 
-export default function Assinatura({ barbershop, onUpdate }: AssinaturaProps) {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
+export default function Assinatura({ barbershop }: AssinaturaProps) {
   const [errorMsg, setErrorMsg] = useState("");
 
   const subscriptionStatus = barbershop?.subscriptionStatus || "trial";
@@ -43,8 +39,9 @@ export default function Assinatura({ barbershop, onUpdate }: AssinaturaProps) {
     }
   };
 
-  const handleUpgrade = async () => {
-    navigate("/checkout");
+  // Pagamento Asaas e Mercado Pago removido — stub informativo ao usuário
+  const handleUpgrade = () => {
+    setErrorMsg("Pagamento online desativado — escolha pagamento no local ou entre em contato");
   };
 
   const trialDaysRemaining = getTrialDaysRemaining();
@@ -181,31 +178,24 @@ export default function Assinatura({ barbershop, onUpdate }: AssinaturaProps) {
         {/* Actions section */}
         <div className="pt-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-left shrink-0">
-            <p className="text-xs text-neutral-400">Métodos aceitos: Cartão de Crédito, Pix e Boleto Bancário.</p>
-            {successMsg && <p className="text-xs text-emerald-600 mt-1 font-semibold">{successMsg}</p>}
-            {errorMsg && <p className="text-xs text-red-600 mt-1 font-semibold">{errorMsg}</p>}
+            <p className="text-xs text-neutral-500 font-medium">
+              Pagamento online desativado — escolha pagamento no local ou entre em contato
+            </p>
+            {errorMsg && <p className="text-xs text-amber-600 mt-1 font-semibold">{errorMsg}</p>}
           </div>
 
           {subscriptionStatus !== "premium" && (
             <button
               onClick={handleUpgrade}
-              disabled={loading}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 text-sm shadow-xl"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all text-sm shadow-xl"
               style={{
                 backgroundColor: primaryColor,
                 color: secondaryColor,
                 boxShadow: `0 10px 15px -3px ${primaryColor}33`
               }}
             >
-              <Zap size={16} className="fill-current shrink-0" />
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Gerando Cobrança...
-                </>
-              ) : (
-                "Assinar Plano Premium"
-              )}
+              <Info size={16} className="shrink-0" />
+              Informações sobre Assinatura
             </button>
           )}
         </div>

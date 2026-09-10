@@ -27,8 +27,6 @@
         "secondaryColor": { "type": "string" },
         "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "cancelled"] },
         "trialEndsAt": { "type": "string", "format": "date-time" },
-        "asaasCustomerId": { "type": "string" },
-        "asaas_customer_id": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "slug"]
