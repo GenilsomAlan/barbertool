@@ -10,6 +10,7 @@ import Blog from "./pages/Blog.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import TermsOfUse from "./pages/TermsOfUse.tsx";
 import Contact from "./pages/Contact.tsx";
+
 import { api } from "./services/api.ts";
 
 export default function App() {

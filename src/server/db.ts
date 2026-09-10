@@ -15,8 +15,6 @@ import {
   orderBy as fsOrderBy, 
   limit as fsLimit, 
   writeBatch,
-  runTransaction as fsRunTransaction,
-  deleteField,
   DocumentReference as FsDocRef,
   CollectionReference as FsCollRef,
   QueryConstraint
@@ -163,38 +161,7 @@ export const db = {
   },
   batch(): WriteBatchWrapper {
     return new WriteBatchWrapper(writeBatch(rawDb));
-  },
-  async runTransaction<T>(updateFunction: (transaction: any) => Promise<T>): Promise<T> {
-    return await fsRunTransaction(rawDb, async (fsTransaction) => {
-      const transactionWrapper = {
-        async get(docRef: DocumentReferenceWrapper): Promise<DocumentSnapshotWrapper> {
-          const snap = await fsTransaction.get(docRef.rawRef);
-          return new DocumentSnapshotWrapper(snap);
-        },
-        set(docRef: DocumentReferenceWrapper, data: any, options?: { merge?: boolean }) {
-          if (options?.merge) {
-            fsTransaction.set(docRef.rawRef, data, { merge: true });
-          } else {
-            fsTransaction.set(docRef.rawRef, data);
-          }
-          return this;
-        },
-        update(docRef: DocumentReferenceWrapper, data: any) {
-          fsTransaction.update(docRef.rawRef, data);
-          return this;
-        },
-        delete(docRef: DocumentReferenceWrapper) {
-          fsTransaction.delete(docRef.rawRef);
-          return this;
-        }
-      };
-      return await updateFunction(transactionWrapper as any);
-    });
   }
-};
-
-export const FieldValue = {
-  delete: () => deleteField()
 };
 
 export async function initDb() {

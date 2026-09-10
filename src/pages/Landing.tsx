@@ -52,7 +52,7 @@ export default function Landing() {
             >
               <div className="inline-flex items-center gap-2 bg-neutral-100 px-4 py-2 rounded-full mb-6">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-neutral-600">Teste Grátis de 21 Dias</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-neutral-600">Teste Grátis de 14 Dias</span>
               </div>
               <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
                 O Futuro da sua <span className="text-neutral-300">Barbearia</span> Começa Aqui.
@@ -66,7 +66,7 @@ export default function Landing() {
                   to="/dashboard" 
                   className="w-full sm:w-auto px-10 py-5 bg-neutral-900 text-white font-bold rounded-[3rem] flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-neutral-900/20"
                 >
-                  Começar 21 Dias Grátis
+                  Começar 14 Dias Grátis
                   <ArrowRight size={20} />
                 </Link>
                 <div className="flex items-center gap-4 px-6 py-4">
@@ -306,9 +306,9 @@ export default function Landing() {
             </div>
             
             <div className="text-4xl font-black mb-1 flex items-baseline gap-2">
-               R$ 49,90 <span className="text-sm text-neutral-500 font-medium tracking-normal">/mês</span>
+               R$ 5,00 <span className="text-sm text-neutral-500 font-medium tracking-normal">/mês</span>
             </div>
-            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-8">Primeiros 21 dias grátis</p>
+            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-8">Primeiros 14 dias grátis</p>
             
             <ul className="space-y-4 mb-10 flex-grow">
               <li className="flex items-center gap-3 text-sm">
@@ -337,7 +337,7 @@ export default function Landing() {
               to="/dashboard"
               className="w-full py-5 bg-white text-neutral-900 font-black rounded-2xl text-center hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
-              Iniciar 21 Dias Trial
+              Iniciar 14 Dias Trial
             </Link>
           </div>
         </div>

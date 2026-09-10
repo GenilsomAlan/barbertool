@@ -5,7 +5,6 @@ import nodemailer from "nodemailer";
 import { db, generateSlug } from "../db.ts";
 import { signToken } from "../auth.ts";
 import { z } from "zod";
-import { TRIAL_DAYS } from "../../config/payment.ts";
 
 const VALID_COUPONS: Record<string, number> = {
   "DESCONTO10": 10,
@@ -186,7 +185,7 @@ export function setupAuthRoutes(app: Express) {
 
       const now = new Date();
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(now.getDate() + TRIAL_DAYS);
+      trialEndsAt.setDate(now.getDate() + 14);
 
       let appliedCoupon = null;
       let discountPercent = null;

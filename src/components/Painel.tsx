@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api.ts";
-import { PREMIUM_PLAN_NAME, PREMIUM_PLAN_AMOUNT } from "../config/payment.ts";
 import { Calendar, TrendingUp, Users, Loader2, ArrowUpRight, ArrowDownRight, Bell, CheckCircle, XCircle, Layers, Clock, Lock, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
@@ -16,18 +15,11 @@ export default function Painel({ barbershopName, primaryColor, secondaryColor, s
   const handleUpgrade = async () => {
     setIsUpgrading(true);
     try {
-      const response = await api.payments.createSubscription({
-        planName: PREMIUM_PLAN_NAME,
-        amount: PREMIUM_PLAN_AMOUNT
-      });
-      if (response && response.checkoutUrl) {
-        window.location.href = response.checkoutUrl;
-      } else {
-        throw new Error("Não foi possível gerar o link de checkout do Mercado Pago.");
-      }
-    } catch (err: any) {
+      const { checkoutUrl } = await api.payments.createSubscription({});
+      window.location.href = checkoutUrl;
+    } catch (err) {
       console.error(err);
-      alert(err.message || "Erro ao gerar checkout. Verifique sua conexão.");
+      alert("Erro ao gerar checkout. Verifique sua conexão.");
     } finally {
       setIsUpgrading(false);
     }

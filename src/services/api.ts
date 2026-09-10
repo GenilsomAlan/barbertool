@@ -124,6 +124,7 @@ export const api = {
     delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },
   payments: {
+    ensureAsaasCustomer: () => fetchApi("/payments/asaas/customer", { method: "POST" }),
     createSubscription: (data: any) => fetchApi("/payments/subscribe", { method: "POST", body: JSON.stringify(data) }),
     getSubscription: () => fetchApi("/payments/subscription"),
     cancel: () => fetchApi("/payments/subscription/cancel", { method: "POST" }),
