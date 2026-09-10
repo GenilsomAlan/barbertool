@@ -123,10 +123,33 @@ export const api = {
     }),
     delete: (id: string) => fetchApi(`/appointments/${id}`, { method: "DELETE" }),
   },
-  // Integrações com Asaas e Mercado Pago removidas — endpoints substituídos por stubs seguros que retornam status disabled
+  // Integração Asaas - Assinatura Recorrente Mensal (Cartão de Crédito)
   payments: {
-    ensureAsaasCustomer: () => fetchApi("/payments/asaas/customer", { method: "POST" }),
-    createSubscription: (data: any) => fetchApi("/payments/subscribe", { method: "POST", body: JSON.stringify(data) }),
+    getPlan: () => fetchApi("/payments/plan"),
+    ensureAsaasCustomer: (data?: any) => fetchApi("/payments/asaas/customer", { 
+      method: "POST", 
+      body: data ? JSON.stringify(data) : undefined 
+    }),
+    createSubscription: (data: {
+      billingType: "CREDIT_CARD";
+      creditCard: {
+        holderName: string;
+        number: string;
+        expiryMonth: string;
+        expiryYear: string;
+        ccv: string;
+      };
+      creditCardHolderInfo: {
+        name: string;
+        email: string;
+        cpfCnpj: string;
+        postalCode: string;
+        addressNumber: string;
+        phone: string;
+        mobilePhone?: string;
+        addressComplement?: string;
+      };
+    }) => fetchApi("/payments/asaas/subscription", { method: "POST", body: JSON.stringify(data) }),
     getSubscription: () => fetchApi("/payments/subscription"),
     cancel: () => fetchApi("/payments/subscription/cancel", { method: "POST" }),
   },
